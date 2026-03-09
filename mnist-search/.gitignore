@@ -1,0 +1,8 @@
+__pycache__/
+*.py[oc]
+.venv/
+results.tsv
+CLAUDE.md
+AGENTS.md
+run.log
+data/
