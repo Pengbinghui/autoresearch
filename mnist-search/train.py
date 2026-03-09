@@ -22,11 +22,11 @@ TIME_BUDGET = 120
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(1, 8, 3, padding=1)
-        self.conv2 = nn.Conv2d(8, 16, 3, padding=1)
+        self.conv1 = nn.Conv2d(1, 4, 3, padding=1)
+        self.conv2 = nn.Conv2d(4, 8, 3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
-        self.fc1 = nn.Linear(16 * 7 * 7, 64)
-        self.fc2 = nn.Linear(64, 10)
+        self.fc1 = nn.Linear(8 * 7 * 7, 32)
+        self.fc2 = nn.Linear(32, 10)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))  # 28->14
