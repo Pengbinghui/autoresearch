@@ -12,8 +12,11 @@ import torch.nn.functional as F
 
 from prepare import TIME_BUDGET, get_data, make_batches, evaluate_accuracy
 
+# Goal B: override time budget to 120s
+TIME_BUDGET = 120
+
 # ---------------------------------------------------------------------------
-# Model (edit this — architecture is fair game)
+# Model: small CNN with global average pooling to minimize params
 # ---------------------------------------------------------------------------
 
 class Net(nn.Module):
@@ -22,26 +25,26 @@ class Net(nn.Module):
         self.conv1 = nn.Conv2d(1, 16, 3, padding=1)
         self.conv2 = nn.Conv2d(16, 32, 3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
-        self.fc1 = nn.Linear(32 * 7 * 7, 256)
-        self.fc2 = nn.Linear(256, 10)
+        self.fc1 = nn.Linear(32 * 7 * 7, 128)
+        self.fc2 = nn.Linear(128, 10)
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))  # 28x28 -> 14x14
-        x = self.pool(F.relu(self.conv2(x)))  # 14x14 -> 7x7
+        x = self.pool(F.relu(self.conv1(x)))  # 28->14
+        x = self.pool(F.relu(self.conv2(x)))  # 14->7
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         return x
 
 # ---------------------------------------------------------------------------
-# Hyperparameters (edit these directly, no CLI flags needed)
+# Hyperparameters
 # ---------------------------------------------------------------------------
 
 BATCH_SIZE = 64
 LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 0.0
-OPTIMIZER = "adam"      # "adam" or "sgd"
-SGD_MOMENTUM = 0.9      # only used if OPTIMIZER == "sgd"
+OPTIMIZER = "adam"
+SGD_MOMENTUM = 0.9
 
 # ---------------------------------------------------------------------------
 # Setup
@@ -62,12 +65,15 @@ elif OPTIMIZER == "sgd":
     optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=SGD_MOMENTUM, weight_decay=WEIGHT_DECAY)
 
 # ---------------------------------------------------------------------------
-# Training loop (wall-clock time budget)
+# Training loop with early stopping (Goal B)
 # ---------------------------------------------------------------------------
 
 model.train()
 epoch = 0
 step = 0
+best_acc = 0.0
+patience = 3
+no_improve = 0
 t_train_start = time.time()
 
 while True:
@@ -85,6 +91,19 @@ while True:
 
     progress = min(training_time / TIME_BUDGET, 1.0)
     print(f"\repoch {epoch} | step {step} | loss: {loss.item():.4f} | {100*progress:.0f}%    ", end="", flush=True)
+
+    # Early stopping: check accuracy after each epoch
+    acc = evaluate_accuracy(model)
+    model.train()
+    print(f" | val_acc: {acc:.4f}")
+    if acc > best_acc:
+        best_acc = acc
+        no_improve = 0
+    else:
+        no_improve += 1
+    if no_improve >= patience:
+        print(f"Early stopping: no improvement for {patience} epochs")
+        break
 
     if training_time >= TIME_BUDGET:
         break
