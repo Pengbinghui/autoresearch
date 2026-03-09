@@ -19,22 +19,24 @@ from prepare import TIME_BUDGET, get_data, make_batches, evaluate_accuracy
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
-        self.fc1 = nn.Linear(784, HIDDEN_SIZE)
-        self.fc2 = nn.Linear(HIDDEN_SIZE, HIDDEN_SIZE)
-        self.fc3 = nn.Linear(HIDDEN_SIZE, 10)
+        self.conv1 = nn.Conv2d(1, 32, 3, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, 3, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.fc1 = nn.Linear(64 * 7 * 7, 256)
+        self.fc2 = nn.Linear(256, 10)
 
     def forward(self, x):
-        x = x.view(x.size(0), -1)  # flatten 28x28 -> 784
+        x = self.pool(F.relu(self.conv1(x)))  # 28x28 -> 14x14
+        x = self.pool(F.relu(self.conv2(x)))  # 14x14 -> 7x7
+        x = x.view(x.size(0), -1)
         x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = self.fc2(x)
         return x
 
 # ---------------------------------------------------------------------------
 # Hyperparameters (edit these directly, no CLI flags needed)
 # ---------------------------------------------------------------------------
 
-HIDDEN_SIZE = 256
 BATCH_SIZE = 64
 LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 0.0
