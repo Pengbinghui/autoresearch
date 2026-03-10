@@ -42,7 +42,7 @@ reached = False
 
 while True:
     epoch += 1
-    for x, y in make_batches(train_images, train_labels, 64):
+    for x, y in make_batches(train_images, train_labels, 256):
         optimizer.zero_grad()
         loss = F.cross_entropy(model(x), y)
         loss.backward()
