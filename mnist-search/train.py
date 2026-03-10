@@ -1,27 +1,29 @@
-"""MNIST search — training script (D2: d=7 baseline)."""
+"""MNIST search — training script (D2: d=7 cosine LR)."""
 import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from prepare import TIME_BUDGET, get_data, make_batches, evaluate_accuracy
 
-TIME_BUDGET = 120
+TIME_BUDGET = 600
 TARGET_ACC = 0.95
+MAX_EPOCHS = 200
 
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
-        self.proj = nn.Linear(784, 7)
-        self.fc1 = nn.Linear(7, 256)
-        self.fc2 = nn.Linear(256, 128)
-        self.fc3 = nn.Linear(128, 10)
+        self.net = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(784, 7),
+            nn.ReLU(),
+            nn.Linear(7, 256),
+            nn.ReLU(),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Linear(128, 10),
+        )
     def forward(self, x):
-        x = x.view(x.size(0), -1)
-        x = self.proj(x)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+        return self.net(x)
 
 t_start = time.time()
 torch.manual_seed(3)
@@ -30,6 +32,7 @@ num_params = sum(p.numel() for p in model.parameters())
 print(f"Parameters: {num_params:,}")
 train_images, train_labels, _, _ = get_data()
 optimizer = torch.optim.Adam(model.parameters(), lr=3e-4, weight_decay=0)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=MAX_EPOCHS)
 
 model.train()
 epoch = 0
@@ -44,10 +47,12 @@ while True:
         loss = F.cross_entropy(model(x), y)
         loss.backward()
         optimizer.step()
+    scheduler.step()
     training_time = time.time() - t_train_start
     acc = evaluate_accuracy(model)
     model.train()
-    print(f"epoch {epoch} | val_acc: {acc:.4f} | time: {training_time:.1f}s")
+    if epoch % 5 == 0 or acc >= TARGET_ACC:
+        print(f"epoch {epoch} | val_acc: {acc:.4f} | best: {best_val:.4f} | time: {training_time:.1f}s")
     if acc > best_val:
         best_val = acc
         no_improve = 0
@@ -55,9 +60,11 @@ while True:
         no_improve += 1
     if acc >= TARGET_ACC:
         break
-    if no_improve >= 8:
+    if no_improve >= 20:
         break
     if training_time >= TIME_BUDGET:
+        break
+    if epoch >= MAX_EPOCHS:
         break
 
 print()
