@@ -31,7 +31,7 @@ model = Net()
 num_params = sum(p.numel() for p in model.parameters())
 print(f"Parameters: {num_params:,}")
 train_images, train_labels, _, _ = get_data()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.002, weight_decay=0)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.003, weight_decay=0)
 
 
 model.train()
