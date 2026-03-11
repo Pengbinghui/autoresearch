@@ -1,4 +1,4 @@
-"""MNIST search — training script (D2: d=7 cosine LR)."""
+"""MNIST search — training script (D1: 79 pixels)."""
 import time
 import torch
 import torch.nn as nn
@@ -9,27 +9,37 @@ TIME_BUDGET = 600
 TARGET_ACC = 0.95
 MAX_EPOCHS = 200
 
+# Top 79 ranked pixels (variance * between-class F-statistic)
+POSITIONS = [(13, 14), (14, 14), (16, 13), (12, 14), (15, 14), (14, 17), (15, 13), (16, 14), (17, 13), (15, 17), (12, 15), (13, 17), (14, 13), (15, 16), (16, 16), (13, 13), (13, 15), (21, 9), (14, 9), (13, 9), (19, 11), (19, 10), (17, 14), (16, 12), (17, 12), (22, 10), (20, 9), (15, 9), (20, 10), (6, 15), (11, 15), (9, 11), (14, 16), (12, 9), (5, 15), (18, 11), (11, 10), (12, 10), (13, 10), (10, 10), (12, 18), (18, 13), (21, 10), (11, 18), (6, 16), (18, 12), (18, 10), (14, 8), (12, 17), (20, 11), (6, 14), (10, 11), (23, 12), (16, 15), (21, 8), (22, 9), (19, 12), (15, 8), (20, 8), (13, 12), (22, 11), (5, 14), (13, 11), (14, 10), (19, 9), (13, 18), (14, 15), (5, 16), (15, 10), (17, 11), (16, 17), (12, 11), (11, 9), (9, 12), (16, 11), (23, 13), (15, 15), (15, 12), (16, 9)]
+
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(784, 7),
-            nn.ReLU(),
-            nn.Linear(7, 256),
-            nn.ReLU(),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Linear(128, 10),
-        )
+        rows = torch.tensor([p[0] for p in POSITIONS], dtype=torch.long)
+        cols = torch.tensor([p[1] for p in POSITIONS], dtype=torch.long)
+        self.register_buffer('rows', rows)
+        self.register_buffer('cols', cols)
+        n = len(POSITIONS)
+        self.fc1 = nn.Linear(n, 256)
+        self.fc2 = nn.Linear(256, 128)
+        self.fc3 = nn.Linear(128, 10)
+        self.drop = nn.Dropout(0.1)
+
     def forward(self, x):
-        return self.net(x)
+        x = x[:, 0, self.rows, self.cols]  # [B, n_pixels]
+        x = F.relu(self.fc1(x))
+        x = self.drop(x)
+        x = F.relu(self.fc2(x))
+        x = self.drop(x)
+        x = self.fc3(x)
+        return x
 
 t_start = time.time()
 torch.manual_seed(3)
 model = Net()
 num_params = sum(p.numel() for p in model.parameters())
 print(f"Parameters: {num_params:,}")
+print(f"pixel_count: {len(POSITIONS)}")
 train_images, train_labels, _, _ = get_data()
 optimizer = torch.optim.Adam(model.parameters(), lr=3e-4, weight_decay=0)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=MAX_EPOCHS)
@@ -42,16 +52,16 @@ no_improve = 0
 
 while True:
     epoch += 1
-    for x, y in make_batches(train_images, train_labels, 32):
+    for x, y in make_batches(train_images, train_labels, 128):
         optimizer.zero_grad()
-        loss = F.cross_entropy(model(x), y)
+        loss = F.cross_entropy(model(x), y, label_smoothing=0.1)
         loss.backward()
         optimizer.step()
     scheduler.step()
     training_time = time.time() - t_train_start
     acc = evaluate_accuracy(model)
     model.train()
-    if epoch % 5 == 0 or acc >= TARGET_ACC:
+    if epoch % 10 == 0 or acc >= TARGET_ACC:
         print(f"epoch {epoch} | val_acc: {acc:.4f} | best: {best_val:.4f} | time: {training_time:.1f}s")
     if acc > best_val:
         best_val = acc
@@ -77,4 +87,4 @@ print(f"training_seconds: {training_time:.1f}")
 print(f"total_seconds:    {t_end - t_start:.1f}")
 print(f"total_epochs:     {epoch}")
 print(f"num_params:       {num_params}")
-print(f"projection_dim:   7")
+print(f"pixel_count:      {len(POSITIONS)}")
