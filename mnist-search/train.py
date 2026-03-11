@@ -1,4 +1,4 @@
-"""MNIST search — training script (D1: 52 pixels, drop (25,9))."""
+"""MNIST search — training script (D1: 51 pixels, drop (14,13))."""
 import time
 import torch
 import torch.nn as nn
@@ -9,8 +9,8 @@ TIME_BUDGET = 1200
 TARGET_ACC = 0.95
 MAX_EPOCHS = 200
 
-# 52 pixels — removed (25,9) from 53-set (least important by weight, imp=38.18), seed=42
-POSITIONS = [(26, 14), (10, 14), (25, 8), (7, 23), (26, 15), (25, 10), (10, 13), (11, 14), (14, 5), (9, 14), (13, 14), (11, 13), (17, 11), (26, 17), (17, 10), (9, 17), (13, 12), (18, 10), (18, 12), (12, 13), (15, 14), (26, 10), (19, 12), (8, 14), (12, 11), (9, 13), (7, 15), (24, 17), (14, 13), (11, 12), (17, 18), (16, 19), (17, 12), (19, 10), (19, 11), (9, 16), (16, 11), (14, 9), (10, 17), (5, 20), (12, 15), (6, 23), (7, 13), (6, 15), (7, 19), (14, 19), (11, 9), (15, 13), (8, 15), (14, 14), (16, 13), (14, 17)]
+# 51 pixels — removed (14,13) from 52-set, seed=7, wider h=[768,256]
+POSITIONS = [(26, 14), (10, 14), (25, 8), (7, 23), (26, 15), (25, 10), (10, 13), (11, 14), (14, 5), (9, 14), (13, 14), (11, 13), (17, 11), (26, 17), (17, 10), (9, 17), (13, 12), (18, 10), (18, 12), (12, 13), (15, 14), (26, 10), (19, 12), (8, 14), (12, 11), (9, 13), (7, 15), (24, 17), (11, 12), (17, 18), (16, 19), (17, 12), (19, 10), (19, 11), (9, 16), (16, 11), (14, 9), (10, 17), (5, 20), (12, 15), (6, 23), (7, 13), (6, 15), (7, 19), (14, 19), (11, 9), (15, 13), (8, 15), (14, 14), (16, 13), (14, 17)]
 
 class Net(nn.Module):
     def __init__(self):
@@ -20,8 +20,8 @@ class Net(nn.Module):
         self.register_buffer('rows', rows)
         self.register_buffer('cols', cols)
         n = len(POSITIONS)
-        self.fc1 = nn.Linear(n, 512)
-        self.fc2 = nn.Linear(512, 256)
+        self.fc1 = nn.Linear(n, 768)
+        self.fc2 = nn.Linear(768, 256)
         self.fc3 = nn.Linear(256, 10)
         self.drop = nn.Dropout(0.1)
 
@@ -35,7 +35,7 @@ class Net(nn.Module):
         return x
 
 t_start = time.time()
-torch.manual_seed(42)
+torch.manual_seed(7)
 model = Net()
 num_params = sum(p.numel() for p in model.parameters())
 print(f"Parameters: {num_params:,}")
