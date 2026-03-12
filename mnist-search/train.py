@@ -1,4 +1,4 @@
-"""MNIST search — training script (D1-90: 27 pixels, drop (11,14) 2nd least imp)."""
+"""MNIST search — training script (D1-90: 26 pixels, drop (9,13))."""
 import time
 import torch
 import torch.nn as nn
@@ -9,8 +9,8 @@ TIME_BUDGET = 300
 TARGET_ACC = 0.90
 MAX_EPOCHS = 200
 
-# 27 pixels — removed (11,14) from 28-set (2nd least important, imp=56.17)
-POSITIONS = [(10, 14), (17, 10), (9, 17), (13, 12), (18, 10), (18, 12), (12, 13), (15, 14), (19, 12), (8, 14), (12, 11), (9, 13), (11, 12), (17, 18), (16, 19), (19, 11), (16, 11), (14, 9), (10, 17), (12, 15), (14, 19), (11, 9), (15, 13), (8, 15), (14, 14), (16, 13), (14, 17)]
+# 26 pixels — removed (9,13) from 27-set
+POSITIONS = [(10, 14), (17, 10), (9, 17), (13, 12), (18, 10), (18, 12), (12, 13), (15, 14), (19, 12), (8, 14), (12, 11), (11, 12), (17, 18), (16, 19), (19, 11), (16, 11), (14, 9), (10, 17), (12, 15), (14, 19), (11, 9), (15, 13), (8, 15), (14, 14), (16, 13), (14, 17)]
 
 class Net(nn.Module):
     def __init__(self):
