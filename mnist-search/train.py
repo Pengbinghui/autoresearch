@@ -1,16 +1,17 @@
-"""MNIST search — training script (D1: 47 pixels, drop (17,12))."""
+"""MNIST search — training script (D1-90: 37 pixels, drop 10 peripheral from 47-set)."""
 import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from prepare import TIME_BUDGET, get_data, make_batches, evaluate_accuracy
 
-TIME_BUDGET = 1200
-TARGET_ACC = 0.95
+TIME_BUDGET = 180
+TARGET_ACC = 0.90
 MAX_EPOCHS = 200
 
-# 47 pixels — removed (17,12) from 48-set (5th least important, imp=64.81), seed=7, h=[768,256]
-POSITIONS = [(26, 14), (10, 14), (25, 8), (7, 23), (26, 15), (25, 10), (10, 13), (11, 14), (14, 5), (13, 14), (11, 13), (26, 17), (17, 10), (9, 17), (13, 12), (18, 10), (18, 12), (12, 13), (15, 14), (26, 10), (19, 12), (8, 14), (12, 11), (9, 13), (24, 17), (11, 12), (17, 18), (16, 19), (19, 10), (19, 11), (9, 16), (16, 11), (14, 9), (10, 17), (5, 20), (12, 15), (6, 23), (7, 13), (6, 15), (7, 19), (14, 19), (11, 9), (15, 13), (8, 15), (14, 14), (16, 13), (14, 17)]
+# 37 pixels — removed 10 most peripheral from 47-pixel set:
+# dropped: (26,14),(26,15),(6,23),(26,10),(26,17),(25,8),(25,10),(7,23),(5,20),(24,17)
+POSITIONS = [(10, 14), (10, 13), (11, 14), (14, 5), (13, 14), (11, 13), (17, 10), (9, 17), (13, 12), (18, 10), (18, 12), (12, 13), (15, 14), (19, 12), (8, 14), (12, 11), (9, 13), (11, 12), (17, 18), (16, 19), (19, 10), (19, 11), (9, 16), (16, 11), (14, 9), (10, 17), (12, 15), (7, 13), (6, 15), (7, 19), (14, 19), (11, 9), (15, 13), (8, 15), (14, 14), (16, 13), (14, 17)]
 
 class Net(nn.Module):
     def __init__(self):
@@ -20,8 +21,8 @@ class Net(nn.Module):
         self.register_buffer('rows', rows)
         self.register_buffer('cols', cols)
         n = len(POSITIONS)
-        self.fc1 = nn.Linear(n, 768)
-        self.fc2 = nn.Linear(768, 256)
+        self.fc1 = nn.Linear(n, 512)
+        self.fc2 = nn.Linear(512, 256)
         self.fc3 = nn.Linear(256, 10)
         self.drop = nn.Dropout(0.1)
 
